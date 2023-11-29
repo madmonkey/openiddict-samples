@@ -38,7 +38,8 @@ namespace Mortis.Client.Controllers
 
             // Retrieve the identity stored in the local authentication cookie. If it's not available,
             // this indicate that the user is already logged out locally (or has not logged in yet).
-            var result = await context.Authentication.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationType);
+            var result =
+                await context.Authentication.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationType);
             if (result is not { Identity: ClaimsIdentity identity })
             {
                 // Only allow local return URLs to prevent open redirect attacks.
@@ -74,7 +75,8 @@ namespace Mortis.Client.Controllers
             var context = HttpContext.GetOwinContext();
 
             // Retrieve the authorization data validated by OpenIddict as part of the callback handling.
-            var result = await context.Authentication.AuthenticateAsync(OpenIddictClientOwinDefaults.AuthenticationType);
+            var result =
+                await context.Authentication.AuthenticateAsync(OpenIddictClientOwinDefaults.AuthenticationType);
 
             // Multiple strategies exist to handle OAuth 2.0/OpenID Connect callbacks, each with their pros and cons:
             //
@@ -105,7 +107,8 @@ namespace Mortis.Client.Controllers
             // the access/refresh tokens can be retrieved using result.Properties.GetTokens() to make API calls.
             if (result.Identity is not ClaimsIdentity { IsAuthenticated: true })
             {
-                throw new InvalidOperationException("The external authorization data cannot be used for authentication.");
+                throw new InvalidOperationException(
+                    "The external authorization data cannot be used for authentication.");
             }
 
             // Build an identity based on the external claims and that will be used to create the authentication cookie.
@@ -134,7 +137,7 @@ namespace Mortis.Client.Controllers
                     // Don't preserve the other claims.
                     _ => false
                 }));
-
+            claims = claims.GroupBy(x => x.ValueType).Select(grp => grp.First()).ToList();
             // The antiforgery components require both the ClaimTypes.NameIdentifier and identityprovider claims
             // so the latter is manually added using the issuer identity resolved from the remote server.
             claims.Add(new Claim("http://schemas.microsoft.com/accesscontrolservice/2010/07/claims/identityprovider",
@@ -154,9 +157,9 @@ namespace Mortis.Client.Controllers
 
                     // Preserve the access, identity and refresh tokens returned in the token response, if available.
                     {
-                        Key: OpenIddictClientOwinConstants.Tokens.BackchannelAccessToken   or
-                             OpenIddictClientOwinConstants.Tokens.BackchannelIdentityToken or
-                             OpenIddictClientOwinConstants.Tokens.RefreshToken
+                        Key: OpenIddictClientOwinConstants.Tokens.BackchannelAccessToken or
+                        OpenIddictClientOwinConstants.Tokens.BackchannelIdentityToken or
+                        OpenIddictClientOwinConstants.Tokens.RefreshToken
                     } => true,
 
                     // Don't add the other properties to the external cookie.
@@ -177,7 +180,8 @@ namespace Mortis.Client.Controllers
             var context = HttpContext.GetOwinContext();
 
             // Retrieve the data stored by OpenIddict in the state token created when the logout was triggered.
-            var result = await context.Authentication.AuthenticateAsync(OpenIddictClientOwinDefaults.AuthenticationType);
+            var result =
+                await context.Authentication.AuthenticateAsync(OpenIddictClientOwinDefaults.AuthenticationType);
 
             // In this sample, the local authentication cookie is always removed before the user agent is redirected
             // to the authorization server. Applications that prefer delaying the removal of the local cookie can

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using System.Web.Configuration;
 using System.Web.Mvc;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Owin.Host.SystemWeb;
 using Microsoft.Owin.Security.Cookies;
 using Mortis.Client.Models;
+using OpenIddict.Abstractions;
 using OpenIddict.Client;
 using OpenIddict.Client.Owin;
 using Owin;
@@ -29,7 +31,7 @@ namespace Mortis.Client
                     // Configure OpenIddict to use the Entity Framework 6.x stores and models.
                     // Note: call ReplaceDefaultEntities() to replace the default OpenIddict entities.
                     options.UseEntityFramework()
-                           .UseDbContext<ApplicationDbContext>();
+                        .UseDbContext<ApplicationDbContext>();
 
                     // Developers who prefer using MongoDB can remove the previous lines
                     // and configure OpenIddict to use the specified MongoDB database:
@@ -46,20 +48,21 @@ namespace Mortis.Client
                     // Register the signing and encryption credentials used to protect
                     // sensitive data like the state tokens produced by OpenIddict.
                     options.AddDevelopmentEncryptionCertificate()
-                           .AddDevelopmentSigningCertificate();
+                        .AddDevelopmentSigningCertificate();
 
                     // Register the OWIN host and configure the OWIN-specific options.
                     options.UseOwin()
-                           .EnableRedirectionEndpointPassthrough()
-                           .EnablePostLogoutRedirectionEndpointPassthrough()
-                           .SetCookieManager(new SystemWebCookieManager());
+                        .EnableRedirectionEndpointPassthrough()
+                        .EnablePostLogoutRedirectionEndpointPassthrough()
+                        .SetCookieManager(new SystemWebCookieManager());
 
                     // Register the System.Net.Http integration and use the identity of the current
                     // assembly as a more specific user agent, which can be useful when dealing with
                     // providers that use the user agent as a way to throttle requests (e.g Reddit).
                     options.UseSystemNetHttp()
-                           .SetProductInformation(typeof(Startup).Assembly);
+                        .SetProductInformation(typeof(Startup).Assembly);
 
+                    /*
                     // Add a client registration matching the client application definition in the server project.
                     options.AddRegistration(new OpenIddictClientRegistration
                     {
@@ -68,6 +71,28 @@ namespace Mortis.Client
                         ClientId = "mvc",
                         ClientSecret = "901564A5-E7FE-42CB-B10D-61EF6A8F3654",
                         Scopes = { Scopes.Email, Scopes.Profile },
+
+                        // Note: to mitigate mix-up attacks, it's recommended to use a unique redirection endpoint
+                        // URI per provider, unless all the registered providers support returning a special "iss"
+                        // parameter containing their URL as part of authorization responses. For more information,
+                        // see https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#section-4.4.
+                        RedirectUri = new Uri("callback/login/local", UriKind.Relative),
+                        PostLogoutRedirectUri = new Uri("callback/logout/local", UriKind.Relative)
+                    });
+                    */
+                    options.AddRegistration(new OpenIddictClientRegistration
+                    {
+                        Issuer =
+                            new Uri($"{WebConfigurationManager.AppSettings["OpenIddictServer"]}", UriKind.Absolute),
+
+                        //ClientId = "portal_web",
+                        //ClientSecret = "1q2w3e*",
+                        ClientId = $"{WebConfigurationManager.AppSettings["OpenIddictClient"]}",
+                        ClientSecret = $"{WebConfigurationManager.AppSettings["OpenIddictSecret"]}",
+                        Scopes =
+                        {
+                            "openid"
+                        },
 
                         // Note: to mitigate mix-up attacks, it's recommended to use a unique redirection endpoint
                         // URI per provider, unless all the registered providers support returning a special "iss"

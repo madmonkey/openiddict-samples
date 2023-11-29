@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
+using System.Web.Configuration;
 using System.Web.Mvc;
 using Microsoft.Owin.Security.Cookies;
 using static OpenIddict.Client.Owin.OpenIddictClientOwinConstants;
@@ -25,12 +26,14 @@ namespace Mortis.Client.Controllers
         {
             var context = HttpContext.GetOwinContext();
 
-            var result = await context.Authentication.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationType);
+            var result =
+                await context.Authentication.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationType);
             var token = result.Properties.Dictionary[Tokens.BackchannelAccessToken];
 
             using var client = _httpClientFactory.CreateClient();
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, "https://localhost:44349/api/message");
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                $"{WebConfigurationManager.AppSettings["OpenIddictServer"]}api/message");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             using var response = await client.SendAsync(request, cancellationToken);
