@@ -7,6 +7,7 @@ using System.Web;
 using System.Web.Mvc;
 using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
+using Microsoft.Owin.Security.Provider;
 using OpenIddict.Abstractions;
 using OpenIddict.Client.Owin;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -18,6 +19,7 @@ namespace Mortis.Client.Controllers
         [HttpGet, Route("~/login")]
         public ActionResult LogIn(string returnUrl)
         {
+            DeleteCookies();
             var context = HttpContext.GetOwinContext();
 
             var properties = new AuthenticationProperties
@@ -63,7 +65,9 @@ namespace Mortis.Client.Controllers
 
             // Ask the OpenIddict client middleware to redirect the user agent to the identity provider.
             context.Authentication.SignOut(properties, OpenIddictClientOwinDefaults.AuthenticationType);
-            return Redirect(properties.RedirectUri);
+            DeleteCookies();
+            return RedirectToAction("Index", "Home");
+            //return Redirect(properties.RedirectUri);
         }
 
         // Note: this controller uses the same callback action for all providers
@@ -116,27 +120,32 @@ namespace Mortis.Client.Controllers
             // By default, all claims extracted during the authorization dance are available. The claims collection stored
             // in the cookie can be filtered out or mapped to different names depending the claim name or its issuer.
             var claims = new List<Claim>(result.Identity.Claims
-                .Select(claim => claim switch
-                {
-                    // Map the standard "sub" and custom "id" claims to ClaimTypes.NameIdentifier, which is
-                    // the default claim type used by .NET and is required by the antiforgery components.
-                    { Type: Claims.Subject }
-                        => new Claim(ClaimTypes.NameIdentifier, claim.Value, claim.ValueType, claim.Issuer),
+                .Select(x => x.Type == Claims.Subject
+                    ? new Claim(ClaimTypes.NameIdentifier, x.Value, x.ValueType, x.Issuer)
+                    : x));
+            //new List<Claim>(result.Identity.Claims
+            //    .Select(claim => claim switch
+            //    {
+            //        // Map the standard "sub" and custom "id" claims to ClaimTypes.NameIdentifier, which is
+            //        // the default claim type used by .NET and is required by the antiforgery components.
+            //        { Type: Claims.Subject }
+            //            => new Claim(ClaimTypes.NameIdentifier, claim.Value, claim.ValueType, claim.Issuer),
 
-                    // Map the standard "name" claim to ClaimTypes.Name.
-                    { Type: Claims.Name }
-                        => new Claim(ClaimTypes.Name, claim.Value, claim.ValueType, claim.Issuer),
+            //        // Map the standard "name" claim to ClaimTypes.Name.
+            //        { Type: Claims.Name }
+            //            => new Claim(ClaimTypes.Name, claim.Value, claim.ValueType, claim.Issuer),
 
-                    _ => claim
-                })
-                .Where(claim => claim switch
-                {
-                    // Preserve the basic claims that are necessary for the application to work correctly.
-                    { Type: ClaimTypes.NameIdentifier or ClaimTypes.Name } => true,
+            //        _ => claim
+            //    })
+            //.Where(claim => claim switch
+            //{
+            //    // Preserve the basic claims that are necessary for the application to work correctly.
+            //    { Type: ClaimTypes.NameIdentifier or ClaimTypes.Name } => true,
 
-                    // Don't preserve the other claims.
-                    _ => false
-                }));
+            //    // Don't preserve the other claims.
+            //    _ => false
+            //})
+            //);
             claims = claims.GroupBy(x => x.ValueType).Select(grp => grp.First()).ToList();
             // The antiforgery components require both the ClaimTypes.NameIdentifier and identityprovider claims
             // so the latter is manually added using the issuer identity resolved from the remote server.
@@ -163,7 +172,7 @@ namespace Mortis.Client.Controllers
                     } => true,
 
                     // Don't add the other properties to the external cookie.
-                    _ => false
+                    _ => true // false
                 })
                 .ToDictionary(pair => pair.Key, pair => pair.Value));
 
@@ -186,8 +195,21 @@ namespace Mortis.Client.Controllers
             // In this sample, the local authentication cookie is always removed before the user agent is redirected
             // to the authorization server. Applications that prefer delaying the removal of the local cookie can
             // remove the corresponding code from the logout action and remove the authentication cookie in this action.
+            DeleteCookies();
+            return RedirectToAction("Index", "Home");
+            //return Redirect(result!.Properties!.RedirectUri);
+        }
 
-            return Redirect(result!.Properties!.RedirectUri);
+        public void DeleteCookies()
+        {
+            var myCookies = Request.Cookies.AllKeys;
+            foreach (var cookie in myCookies)
+            {
+                if (Response.Cookies[cookie] != null)
+                {
+                    Response.Cookies[cookie].Expires = DateTime.Now.AddDays(-1);
+                }
+            }
         }
     }
 }

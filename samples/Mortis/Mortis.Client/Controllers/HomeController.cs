@@ -32,7 +32,7 @@ namespace Mortis.Client.Controllers
 
             using var client = _httpClientFactory.CreateClient();
 
-            using var request = new HttpRequestMessage(HttpMethod.Get,
+            using var request = new HttpRequestMessage(HttpMethod.Post,
                 $"{WebConfigurationManager.AppSettings["OpenIddictServer"]}api/message");
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
