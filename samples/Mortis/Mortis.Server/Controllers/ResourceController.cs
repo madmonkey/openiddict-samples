@@ -14,13 +14,13 @@ namespace Mortis.Server.Controllers
     [HostAuthentication(OpenIddictValidationOwinDefaults.AuthenticationType)]
     public class ResourceController : ApiController
     {
-        [Authorize, HttpGet, Route("~/api/message")]
+        [Authorize, AcceptVerbs("Get", "Post"), Route("~/api/message")]
         public async Task<IHttpActionResult> GetMessage()
         {
             var context = Request.GetOwinContext();
 
             var user = await context.GetUserManager<ApplicationUserManager>().FindByIdAsync(
-                ((ClaimsPrincipal) User).FindFirst(Claims.Subject).Value);
+                ((ClaimsPrincipal)User).FindFirst(Claims.Subject).Value);
             if (user is null)
             {
                 context.Authentication.Challenge(
