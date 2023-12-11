@@ -37,7 +37,7 @@ namespace Mortis.Client.Controllers
         public async Task<ActionResult> LogOut(string returnUrl)
         {
             var context = HttpContext.GetOwinContext();
-
+            returnUrl = "/";
             // Retrieve the identity stored in the local authentication cookie. If it's not available,
             // this indicate that the user is already logged out locally (or has not logged in yet).
             var result =
@@ -66,7 +66,8 @@ namespace Mortis.Client.Controllers
             // Ask the OpenIddict client middleware to redirect the user agent to the identity provider.
             context.Authentication.SignOut(properties, OpenIddictClientOwinDefaults.AuthenticationType);
             DeleteCookies();
-            return RedirectToAction("Index", "Home");
+            //return View("Index");
+            return RedirectToRoute("~/", "Home");
             //return Redirect(properties.RedirectUri);
         }
 

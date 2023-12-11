@@ -7,7 +7,7 @@
         <h1>Welcome, @User.Identity.Name</h1>
 
         <p>
-            @foreach (var claim in ((ClaimsPrincipal) Context.User).Claims)
+            @foreach (var claim in ((ClaimsPrincipal)Context.User).Claims)
             {
                 <div>@claim.Type: <b>@claim.Value</b></div>
             }
@@ -23,7 +23,11 @@
 
             <button class="btn btn-lg btn-warning" type="submit">Query the resource controller</button>
         </form>
+        <form action="~/dashboard" method="post">
+            @Html.AntiForgeryToken()
 
+            <button class="btn btn-lg btn-info" type="submit">View Dashboard</button>
+        </form>
         <form action="~/logout" method="post">
             @Html.AntiForgeryToken()
 
